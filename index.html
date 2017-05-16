@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<!--suppress ALL -->
+<html lang="en">
+<head>
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <meta charset="UTF-8">
+    <title>aaaa</title>
+    <script src="jquery-1.9.1.js"></script>
+    <style type="text/css">
+        .tsAndTeDiv {
+            text-align: center;
+            margin: 0 auto;
+            width: 280px;
+            border: 1px solid #AD9D9D;
+            background-color: white;
+        }
+
+        .tsAndTeDiv input{
+            padding: 5px 2px;
+            border: 0px;
+            width: 120px;
+            text-align: center;
+        }
+
+        .timeBody{
+            padding: 10px;
+            width: 530px;
+            height: 330px;
+            position: absolute;
+            background-color: white;
+            box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+        }
+        .timeTitle {
+            height: 20px;
+            float: left;
+        }
+        .timePanel {
+            height: 275px;
+            float: left;
+            border: 1px solid #AD9D9D;
+            border-radius: 8px;
+            margin: 0 4px;
+        }
+        .timeTable{
+            width: 200px;
+        }
+        .timeTd{
+			border-radius: 7px;
+            width: 14.2%;
+            height: 29px;
+        }
+        .action{
+            background-color:#00A3FF;
+        }
+        .timeTd:hover{
+            background-color: #00A3FF;
+        }
+        .timeTdLast{
+            color: #9ba3a9;
+        }
+        .timeTdNext{
+            color: #9ba3a9;
+        }
+        .HH{
+            width: 25px;
+            height: 20px;
+            border: 1px;
+            text-align:center;
+        }
+        .MMSS{
+            width: 25px;
+            height: 20px;
+            border: 1px;
+            text-align:center;
+        }
+        .leftAndRight{
+            padding: 0px 3px;
+            margin: 0 1px;
+        }
+        .btn{
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: #fff;
+            background-color: #0e90d2;
+            border-color: #0e90d2;
+        }
+        .btn-x{
+            border-radius: 5px;
+            color: #fff;
+            background-color: #0e90d2;
+            border-color: #0e90d2;
+        }
+    </style>
+</head>
+<body style="text-align: center;background-color: #C8CECE;font-size: 15px">
+    <div class="tsAndTeDiv">
+        <input type="text" name="ts">
+        <span>到</span>
+        <input type="text" name="te">
+    </div>
+</body>
+<script>
+    $(function(){
+        $($(".tsAndTeDiv").find("input")[0]).val(getNowFormatDate());
+        $($(".tsAndTeDiv").find("input")[1]).val(getNowFormatDate());
+        $(".tsAndTeDiv").on("click",function (e) {
+            if (!$(".timeBody").length > 0 ){
+                createTimeBody();
+            }
+            //屏蔽点击时删除的function,只触发自身的click
+            (e||event).stopPropagation();
+        });
+    });
+    //点击时删除
+    document.onclick=function(){
+        $(".timeBody").remove();
+    }
+
+    function createTimeBody(){
+        var timeBody = $('<div class="timeBody"></div>');
+        timeBody.append(createTimeTitle());
+        timeBody.append(createTimePanel());
+        timeBody.append(createTimeFoot());
+        timeBody.css("top", $(".tsAndTeDiv").offset().top + $(".tsAndTeDiv").height() + 3);
+        timeBody.css("left", $(".tsAndTeDiv").offset().left - 125);
+        $("body").append(timeBody);
+        //屏蔽点击时删除的function,只触发自身的click
+        $('.timeBody').on("click",function(e){
+            (e||event).stopPropagation();
+        })
+        return;
+    }
+
+    function limitHH(obj){
+        var value = $(obj).val();
+        //正则表达式验证是否是数字
+        if (/^\d{1,2}$/.test(value)){
+            if ($(obj).val()< 0 || $(obj).val() >23){
+                $(obj).val("");
+            }
+        }else {
+            $(obj).val("");
+        }
+    }
+
+    function limitMMSS(obj){
+        var value = $(obj).val();
+        if (/^\d{1,2}$/.test(value)){
+            if ($(obj).val()< 0 || $(obj).val() >59){
+                $(obj).val("");
+            }
+        }else {
+            $(obj).val("");
+        }
+    }
+
+    function tdChangeColor(td){
+        var tdList = $(td).parent().parent().find("td");
+        for (var i=0;i < tdList.length;i++){
+            $(tdList[i]).removeClass("action");
+        }
+        $(td).addClass("action");
+    }
+
+    function createTimeTitle() {
+        var timeTitleBody = $('<div></div>');
+        var timeTitle_1 = $('<div class="timeTitle" style="width: 100px;">时间范围</div>');
+        var timeTitle_2 = $('<div class="timeTitle" style="width: 200px;">起始时间</div>');
+        var timeTitle_3 = $('<div class="timeTitle" style="width: 200px;">结束时间</div>');
+        timeTitleBody.append(timeTitle_1);
+        timeTitleBody.append(timeTitle_2);
+        timeTitleBody.append(timeTitle_3);
+        return timeTitleBody;
+    }
+
+    function createTimePanel() {
+        var timePanelBody = $('<div></div>');
+        timePanelBody.append(createTimePanelButton());
+        var tsDate = new Date(getTsValue());
+        var teDate = new Date(getTeValue());
+        timePanelBody.append(createTimePanelTime(tsDate));
+        timePanelBody.append(createTimePanelTime(teDate));
+        return timePanelBody;
+    }
+
+    function createTimePanelButton() {
+        var timePanel_1 = $('<div class="timePanel" style="width: 100px;border:none"></div>');
+        var timeButton7day = $('<input type="button" class="btn" value="过去7天" onclick="lastWeek()">');
+        timePanel_1.append(timeButton7day);
+        return timePanel_1;
+    }
+
+    function lastWeek(){
+        $($(".timePanel")[1]).empty();
+        var teDate = new Date()
+        var tsDate = new Date(teDate.getTime() - 7 * 24 * 3600 * 1000);
+        $($(".timePanel")[1]).append(createTimePanelBody(tsDate));
+        $($(".timePanel")[2]).empty();
+        $($(".timePanel")[2]).append(createTimePanelBody(teDate));
+    }
+
+    function createTimePanelTime(date) {
+        var timePanel = $('<div class="timePanel" style="width: 200px;"></div>');
+        timePanel.append(createTimePanelBody(date));
+        return timePanel;
+    }
+
+    function createTimePanelBody(date){
+        var tableThead = '<table class="timeTable"><thead><tr><th onclick="timeForward(this,null)" style="cursor: pointer">' +
+                '<input type="button" class="btn-x" value="<"></th><th colspan="5">'+ getFormatDateYearAndMonth(date) +'</th>' +
+                '<th onclick="timeBackward(this,null)" style="cursor: pointer"><input type="button" class="btn-x" value=">"></th></tr>' +
+                '<tr><th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th></tr></thead>';
+        var tableTbody = '<tbody>' + createTimeTableTbodyContent(date.getFullYear(),date.getMonth() + 1 , date.getDate()) + '</tbody></table>';
+        var hhmmssDiv = createHhmmssDiv(date);
+        return tableThead + tableTbody + hhmmssDiv;
+    }
+
+    function createTimeTableTbodyContent(year,month,day){
+        var tableTbody = '';
+        var count = 0;
+        var tdCount = 0;
+        var firstDay = getFirstDayInMonth(year,month);
+        var lastMonthDays = getLastMonthDays(year,month);
+        var nowMonthDays = getMonthDays(year,month);
+        var nextMonthDays = getNextMonthDays(year,month);
+        var firstDayFlag = firstDay;
+        for (var i=1; i <= 42;i++){
+            if (count == 0){
+                tableTbody += "<tr>";
+            }
+            if (firstDayFlag >0){
+                tableTbody += '<td class="timeTd timeTdLast" onclick="timeTdLastForward(this)" tdCount = ' + tdCount + '>'+(lastMonthDays - firstDayFlag + 1)+'</td>';
+                firstDayFlag--;
+            }else {
+                if (i <= nowMonthDays + firstDay){
+                    if ( (i-firstDay) == day){
+                        tableTbody += '<td class="timeTd action" tdCount = ' + tdCount + ' onclick="tdChangeColor(this)">' + (i - firstDay) + '</td>';
+                    }else {
+                        tableTbody += '<td class="timeTd" tdCount = ' + tdCount + ' onclick="tdChangeColor(this)">' + (i - firstDay) + '</td>';
+                    }
+                }else {
+                    tableTbody += '<td class="timeTd timeTdNext" onclick="timeTdNextForward(this)" tdCount = ' + tdCount + '>' + (i - nowMonthDays - firstDay) + '</td>';
+                }
+            }
+            count++;
+            if (count == 7){
+                tableTbody += "</tr>";
+                count=0;
+            }
+            tdCount++;
+        }
+        return tableTbody;
+    }
+
+    function createTimeFoot(){
+        var button = $('<input style="margin-top: 10px" type="button" class="btn" value="确定" onclick="confirmTime()">');
+        return button;
+    }
+
+    function confirmTime() {
+        var year1 = $($($(".timeTable")[0]).find("th")[1]).html();
+        var day1 = $($(".timeTable")[0]).find(".action").html();
+        var hhmmmss1 = $($(".HH")[0]).val();
+        for (var i = 0; i < 2; i++) {
+            hhmmmss1 += ":" + $($(".MMSS")[i]).val();
+        }
+        var time1 = year1 + "-" + day1 + " " + hhmmmss1;
+        $($(".tsAndTeDiv").find("input")[0]).val(time1);
+
+        var year2 = $($($(".timeTable")[1]).find("th")[1]).html();
+        var day2 = $($(".timeTable")[1]).find(".action").html();
+        var hhmmmss2 = $($(".HH")[1]).val();
+        for (var i = 2; i < 4; i++) {
+            hhmmmss2 += ":" + $($(".MMSS")[i]).val();
+        }
+        var time2 = year2 + "-" + day2 + " " + hhmmmss2;
+        $($(".tsAndTeDiv").find("input")[1]).val(time2);
+        $(".timeBody").remove();
+    }
+
+    function timeTdLastForward(a){
+        timeForward($($(a).parent().parent().parent().find("th")[0]),$(a).html());
+    }
+    function timeTdNextForward(a){
+        timeBackward($($(a).parent().parent().parent().find("th")[2]),$(a).html());
+    }
+
+    function createHhmmssDiv(date){
+        var HhmmssDiv = '<div style="background-color: white;height: 22px;text-align: center"><div style="border: 1px #AD9D9D solid;width: 190px;margin: 0 auto;border-radius: 7px;">'
+                + '<span style="margin-right: 5px">时间</span><input type="text" class="HH" value="' + date.getHours() + '" onkeyup="limitHH(this)" onclick="HHMMSSAction(this)">'
+                + '<span>:</span><input type="text" class="MMSS" value="' + date.getMinutes() + '" onkeyup="limitMMSS(this)"  onclick="HHMMSSAction(this)">'
+                + '<span>:</span><input type="text" class="MMSS" value="' + date.getSeconds() + '" onkeyup="limitMMSS(this)"  onclick="HHMMSSAction(this)" style="margin-right: 10px">'
+                + '<input type="button" value="<" onclick="hhmmssleft(this)" class="leftAndRight btn-x"><input type="button" value=">" onclick="hhmmssright(this)"  class="leftAndRight btn-x"></div></div>';
+        return HhmmssDiv;
+    }
+
+    function HHMMSSAction(inp){
+        var inputs = $(inp).parent().find("input");
+        for (var i=0;i<3;i++){
+            $(inputs[i]).removeClass("action");
+        }
+        $(inp).addClass("action");
+    }
+
+    function hhmmssleft(a){
+        var val = $(a).parent().find(".action").val();
+        if (val > 0){
+            val = val-1;
+            $(a).parent().find(".action").val(val);
+        }
+    }
+
+    function hhmmssright(a){
+        var val = $(a).parent().find(".action").val();
+        if ("HH action" == $(a).parent().find(".action").attr("class")){
+            if (val < 23){
+                val = parseInt(val) + 1;
+            }
+        }else {
+            if (val < 59){
+                val = parseInt(val) + 1;
+            }
+        }
+        $(a).parent().find(".action").val(val);
+    }
+
+    function getTsValue(){
+        return $($(".tsAndTeDiv").find("input")[0]).val();
+    }
+
+    function getTeValue(){
+        return $($(".tsAndTeDiv").find("input")[1]).val();
+    }
+
+    function getNowFormatDate() {
+        var date = new Date();
+        var seperator1 = "-";
+        var seperator2 = ":";
+        var month = date.getMonth() + 1;
+        var strDate = date.getDate();
+        var currentdate = date.getFullYear() + seperator1 + month + seperator1 + strDate
+                + " " + date.getHours() + seperator2 + date.getMinutes()
+                + seperator2 + date.getSeconds();
+        return currentdate;
+    }
+
+    function getFormatDateYearAndMonth(date) {
+        var month = date.getMonth() + 1;
+        var currentdate = date.getFullYear() + "-" + month;
+        return currentdate;
+    }
+
+    function getMonthDays(year,month){
+        var day = new Date(year,month,0);
+        var daycount = day.getDate();
+        return daycount;
+    }
+    function getLastMonthDays(year,month){
+        month = month - 1;
+        if (month == 0){
+            year = year - 1;
+            month = 12;
+        }
+        var day = new Date(year,month,0);
+        var daycount = day.getDate();
+        return daycount;
+    }
+    function getNextMonthDays(year,month){
+        month = month + 1;
+        if (month == 13){
+            year = year + 1;
+            month = 1;
+        }
+        var day = new Date(year,month,0);
+        var daycount = day.getDate();
+        return daycount;
+    }
+
+    function getFirstDayInMonth(year,month){
+        return new Date(year,month-1,1).getDay();
+    }
+    //向左
+    function timeForward(a,day){
+        if (day == null){
+            day = $(a).parent().parent().parent().find(".action").html();
+        }
+        var nowTime = $($(a).parent().find("th")[1]).html();
+        var list = nowTime.split("-");
+        var year = list[0];
+        var month = list[1];
+        if (month == 1){
+            year = year - 1;
+            month = 12;
+        }else {
+            month = month - 1;
+        }
+        $($(a).parent().find("th")[1]).html(year + "-" +month);
+        var tableTbody = $($($(a).parent().parent().parent()).find("tbody"));
+        tableTbody.empty();
+        tableTbody.append(createTimeTableTbodyContent(year,month,day));
+    }
+    //向右
+    function timeBackward(a,day){
+        if (day == null){
+            day = $(a).parent().parent().parent().find(".action").html();
+        }
+        var nowTime = $($(a).parent().find("th")[1]).html();
+        var list = nowTime.split("-");
+        var year = list[0];
+        var month = list[1];
+        if (month == 12){
+            year = parseInt(year) + 1;
+            month = 1;
+        }else {
+            month = parseInt(month) + 1;
+        }
+        $($(a).parent().find("th")[1]).html(year + "-" +month);
+        var tableTbody = $($($(a).parent().parent().parent()).find("tbody"));
+        tableTbody.empty();
+        tableTbody.append(createTimeTableTbodyContent(year,month,day));
+    }
+</script>
+</html>
